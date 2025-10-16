@@ -219,6 +219,23 @@ export default function WhatsAppPage() {
     setRecoveredVideos(videos)
   }
 
+  // Calcular tamanho estimado do ZIP baseado na quantidade de mídia
+  const calculateZipSize = () => {
+    // Média: 2-4 MB por imagem, 15-30 MB por vídeo
+    const avgImageSize = (Math.random() * 2 + 2) // 2-4 MB
+    const avgVideoSize = (Math.random() * 15 + 15) // 15-30 MB
+    
+    const totalImageSize = recoveredImages.length * avgImageSize
+    const totalVideoSize = recoveredVideos.length * avgVideoSize
+    const totalSize = totalImageSize + totalVideoSize
+    
+    // Converter para GB se maior que 1024 MB
+    if (totalSize >= 1024) {
+      return `${(totalSize / 1024).toFixed(1)} GB`
+    }
+    return `${Math.round(totalSize)} MB`
+  }
+
   const generateTerminalLine = (phase: number) => {
     const hash = generateRandomHash().substring(0, 16)
     const speed = Math.floor(Math.random() * 9000000 + 1000000)
@@ -675,7 +692,7 @@ export default function WhatsAppPage() {
                 </button>
                 
                 <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
-                  {t('whatsapp.download.size')}
+                  {t('whatsapp.download.size').replace('2.4 GB', calculateZipSize()).replace('2.4 GB', calculateZipSize())}
                 </p>
               </div>
 

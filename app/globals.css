@@ -87,9 +87,9 @@
 
 /* Body-focused images - show 90% body instead of face */
 .body-focus-avatar {
-  object-position: center 20% !important;
+  object-position: center 80% !important;
 }
 
 .body-focus-team {
-  object-position: center 15% !important;
+  object-position: center 70% !important;
 }
