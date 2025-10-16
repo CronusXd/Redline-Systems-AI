@@ -104,7 +104,7 @@ export default function Reviews() {
                 <img
                   src={review.image}
                   alt={t(review.nameKey)}
-                  className="w-12 h-12 rounded-full object-cover"
+                  className="w-12 h-12 rounded-full object-cover body-focus-avatar"
                 />
                 <div className="flex-1">
                   <h4 className="font-semibold text-gray-900 dark:text-white">
