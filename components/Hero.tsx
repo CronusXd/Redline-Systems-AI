@@ -1,10 +1,16 @@
 'use client'
 
-import { Shield, Cpu, Lock } from 'lucide-react'
+import { Shield, Cpu, Lock, ArrowRight, UserPlus } from 'lucide-react'
+import { useState } from 'react'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useAuth } from '@/contexts/AuthContext'
+import { AuthModal } from './auth/AuthModal'
 
 export default function Hero() {
   const { t } = useLanguage()
+  const { user } = useAuth()
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('register')
   
   return (
     <section id="home" className="pt-32 pb-20 px-4">
@@ -19,6 +25,44 @@ export default function Hero() {
           <p className="text-lg text-gray-500 dark:text-gray-400 mb-12 max-w-3xl mx-auto">
             {t('hero.description')}
           </p>
+
+          {/* Call to Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
+            {user ? (
+              // User is logged in - show dashboard button
+              <a
+                href="/dashboard"
+                className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl font-semibold"
+              >
+                <span>Acessar Dashboard</span>
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </a>
+            ) : (
+              // User is not logged in - show auth buttons
+              <>
+                <button
+                  onClick={() => {
+                    setAuthModalMode('register')
+                    setIsAuthModalOpen(true)
+                  }}
+                  className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl font-semibold"
+                >
+                  <UserPlus className="mr-2 w-5 h-5" />
+                  <span>Começar Agora</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setAuthModalMode('login')
+                    setIsAuthModalOpen(true)
+                  }}
+                  className="inline-flex items-center px-8 py-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-2 border-gray-300 dark:border-gray-600 rounded-full hover:border-blue-500 dark:hover:border-blue-400 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl font-semibold"
+                >
+                  <span>Já tenho conta</span>
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </button>
+              </>
+            )}
+          </div>
 
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16">
@@ -40,6 +84,13 @@ export default function Hero() {
           </div>
         </div>
       </div>
+      
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        initialMode={authModalMode}
+      />
     </section>
   )
 }
