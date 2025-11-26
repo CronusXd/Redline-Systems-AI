@@ -13,7 +13,7 @@
 
 Abra este link no seu navegador:
 ```
-https://supabase.com/dashboard/project/gmxsemjelybvqpsklkcj/editor/sql
+https://supabase.com/dashboard/project/YOUR_PROJECT_ID/editor/sql
 ```
 
 ### 2️⃣ Crie uma Nova Query
@@ -140,12 +140,12 @@ Você deve ver:
 
 ### Ver Usuários Criados
 
-1. Acesse: https://supabase.com/dashboard/project/gmxsemjelybvqpsklkcj/auth/users
+1. Acesse: https://supabase.com/dashboard/project/YOUR_PROJECT_ID/auth/users
 2. Você verá todos os usuários registrados
 
 ### Ver Perfis Criados
 
-1. Acesse: https://supabase.com/dashboard/project/gmxsemjelybvqpsklkcj/editor
+1. Acesse: https://supabase.com/dashboard/project/YOUR_PROJECT_ID/editor
 2. Clique em **"profiles"** na lista de tabelas
 3. Você verá todos os perfis com nome, telefone, etc.
 
