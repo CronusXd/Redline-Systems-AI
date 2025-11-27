@@ -1,22 +1,22 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { AuthGuard } from '@/components/auth/AuthGuard'
 import { Button } from '@/components/ui/Button'
 import { PageLoading } from '@/components/ui/Loading'
 import { FadeIn, StaggeredAnimation } from '@/components/ui/Transitions'
+import { createBrowserClient } from '@supabase/ssr'
 import {
   User,
-  Settings,
-  Shield,
   LogOut,
-  Bell,
   Activity,
-  Calendar,
   FileText,
-  Home
+  Home,
+  MessageCircle,
+  Image as ImageIcon,
+  Video
 } from 'lucide-react'
 
 export default function DashboardPage() {
@@ -27,8 +27,40 @@ export default function DashboardPage() {
   )
 }
 
+interface Consulta {
+  id: string
+  created_at: string
+  phone_number: string
+  messages_count: number
+  images_count: number
+  videos_count: number
+}
+
 const DashboardContent: React.FC = () => {
   const { user, profile, signOut, loading } = useAuth()
+  const [consultas, setConsultas] = useState<Consulta[]>([])
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+
+  useEffect(() => {
+    const fetchConsultas = async () => {
+      if (user) {
+        const { data, error } = await supabase
+          .from('consultas')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+
+        if (data) {
+          setConsultas(data)
+        }
+      }
+    }
+
+    fetchConsultas()
+  }, [user, supabase])
 
   if (loading) {
     return <PageLoading text="Carregando dashboard..." />
@@ -41,16 +73,12 @@ const DashboardContent: React.FC = () => {
   }
 
   const stats = [
-    { name: 'Projetos Ativos', value: '12', icon: FileText, color: 'text-blue-400' },
-    { name: 'Tarefas Pendentes', value: '8', icon: Calendar, color: 'text-yellow-400' },
-    { name: 'Atividades Hoje', value: '24', icon: Activity, color: 'text-green-400' },
-    { name: 'Notificações', value: '3', icon: Bell, color: 'text-red-400' },
+    { name: 'Consultas Realizadas', value: consultas.length.toString(), icon: FileText, color: 'text-blue-400' },
+    { name: 'Atividades Hoje', value: consultas.filter(c => new Date(c.created_at).toDateString() === new Date().toDateString()).length.toString(), icon: Activity, color: 'text-green-400' },
   ]
 
   const quickActions = [
-    { name: 'Meu Perfil', href: '/auth/profile', icon: User, description: 'Gerenciar informações pessoais' },
-    { name: 'Configurações', href: '/settings', icon: Settings, description: 'Preferências do sistema' },
-    { name: 'Segurança', href: '/security', icon: Shield, description: 'Configurações de segurança' },
+    { name: 'Nova Consulta', href: '/whatsapp', icon: MessageCircle, description: 'Iniciar nova análise de WhatsApp' },
   ]
 
   return (
@@ -71,6 +99,15 @@ const DashboardContent: React.FC = () => {
               >
                 <Home className="h-4 w-4" />
                 <span className="text-sm">Home</span>
+              </Link>
+
+              {/* Profile Link */}
+              <Link
+                href="/auth/profile"
+                className="flex items-center space-x-1 text-gray-400 hover:text-white transition-colors px-3 py-2 rounded-md hover:bg-gray-700"
+              >
+                <User className="h-4 w-4" />
+                <span className="text-sm">Meu Perfil</span>
               </Link>
             </div>
 
@@ -120,7 +157,7 @@ const DashboardContent: React.FC = () => {
           </FadeIn>
 
           {/* Estatísticas */}
-          <StaggeredAnimation className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <StaggeredAnimation className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             {stats.map((stat) => (
               <div key={stat.name} className="bg-gray-800 rounded-lg shadow-xl p-6 border border-gray-700">
                 <div className="flex items-center">
@@ -140,6 +177,82 @@ const DashboardContent: React.FC = () => {
             ))}
           </StaggeredAnimation>
 
+          {/* Consultas Recentes */}
+          <FadeIn delay={200}>
+            <div className="bg-gray-800 rounded-lg shadow-xl border border-gray-700 mb-6">
+              <div className="px-6 py-4 border-b border-gray-700 flex justify-between items-center">
+                <h3 className="text-lg font-medium text-white">
+                  Consultas Recentes
+                </h3>
+                <Link href="/whatsapp" className="text-sm text-blue-400 hover:text-blue-300">
+                  Nova Consulta
+                </Link>
+              </div>
+              <div className="p-6">
+                {consultas.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-700">
+                      <thead>
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Data</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Telefone</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Mensagens</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Imagens</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Vídeos</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-gray-800 divide-y divide-gray-700">
+                        {consultas.map((consulta) => (
+                          <tr key={consulta.id}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                              {new Date(consulta.created_at).toLocaleDateString('pt-BR')} {new Date(consulta.created_at).toLocaleTimeString('pt-BR')}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-white font-medium">
+                              {consulta.phone_number}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                              <div className="flex items-center space-x-1">
+                                <MessageCircle className="w-4 h-4 text-blue-400" />
+                                <span>{consulta.messages_count}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                              <div className="flex items-center space-x-1">
+                                <ImageIcon className="w-4 h-4 text-purple-400" />
+                                <span>{consulta.images_count}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                              <div className="flex items-center space-x-1">
+                                <Video className="w-4 h-4 text-pink-400" />
+                                <span>{consulta.videos_count}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                Concluído
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-400 mb-4">Nenhuma consulta realizada ainda.</p>
+                    <Link href="/whatsapp">
+                      <Button variant="primary" size="sm">
+                        Realizar Primeira Consulta
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
+          </FadeIn>
+
           {/* Ações rápidas */}
           <FadeIn delay={400}>
             <div className="bg-gray-800 rounded-lg shadow-xl border border-gray-700">
@@ -149,7 +262,7 @@ const DashboardContent: React.FC = () => {
                 </h3>
               </div>
               <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   {quickActions.map((action) => (
                     <Link
                       key={action.name}

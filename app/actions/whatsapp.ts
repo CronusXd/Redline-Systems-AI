@@ -95,3 +95,55 @@ export async function getOrCreateConsultation(phoneNumber: string): Promise<Cons
         videos_count: newRow.videos_count,
     }
 }
+
+export async function checkExistingConsultation(phoneNumber: string): Promise<ConsultaData | null> {
+    const supabase = createServerSupabaseClient()
+    const cleanNumber = phoneNumber.replace(/\D/g, '')
+
+    const { data: existing, error } = await supabase
+        .from('consultas')
+        .select('*')
+        .eq('phone_number', cleanNumber)
+        .single()
+
+    if (existing && !error) {
+        const row = existing as unknown as ConsultaRow
+        return {
+            phone_number: row.phone_number,
+            messages_count: row.messages_count,
+            images_count: row.images_count,
+            videos_count: row.videos_count,
+        }
+    }
+
+    return null
+}
+
+export async function saveConsultation(phoneNumber: string, messages_count: number, images_count: number, videos_count: number): Promise<ConsultaData> {
+    const supabase = createServerSupabaseClient()
+    const cleanNumber = phoneNumber.replace(/\D/g, '')
+
+    const { data: newConsulta, error } = await supabase
+        .from('consultas')
+        .insert({
+            phone_number: cleanNumber,
+            messages_count,
+            images_count,
+            videos_count,
+        })
+        .select()
+        .single()
+
+    if (error) {
+        console.error('Error saving consultation:', error)
+        throw error
+    }
+
+    const row = newConsulta as unknown as ConsultaRow
+    return {
+        phone_number: row.phone_number,
+        messages_count: row.messages_count,
+        images_count: row.images_count,
+        videos_count: row.videos_count,
+    }
+}

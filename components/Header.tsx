@@ -1,27 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Menu, X, Moon, Sun, Globe } from 'lucide-react'
+import { Menu, X, Moon, Sun } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 
-const languages = [
-  { code: 'pt-BR', name: 'Português', flag: '🇧🇷' },
-  { code: 'en', name: 'English', flag: '🇺🇸' },
-  { code: 'es', name: 'Español', flag: '🇪🇸' },
-  { code: 'fr', name: 'Français', flag: '🇫🇷' },
-  { code: 'it', name: 'Italiano', flag: '🇮🇹' },
-  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
-  { code: 'zh', name: '中文', flag: '🇨🇳' },
-  { code: 'ja', name: '日本語', flag: '🇯🇵' },
-  { code: 'ru', name: 'Русский', flag: '🇷🇺' },
-]
+
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false)
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const [mounted, setMounted] = useState(false)
-  const { language, setLanguage, t } = useLanguage()
+  const { t } = useLanguage()
 
   useEffect(() => {
     setMounted(true)
@@ -44,7 +33,7 @@ export default function Header() {
     document.documentElement.classList.toggle('dark', newTheme === 'dark')
   }
 
-  const currentLang = languages.find(l => l.code === language) || languages[0]
+
 
   if (!mounted) {
     return null
@@ -87,36 +76,7 @@ export default function Header() {
               {t('nav.services')}
             </a>
 
-            {/* Language Selector */}
-            <div className="relative">
-              <button
-                onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
-                className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center space-x-2"
-                aria-label="Select language"
-              >
-                <Globe className="w-5 h-5" />
-                <span className="text-sm">{currentLang.flag}</span>
-              </button>
 
-              {isLangMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50">
-                  {languages.map((lang) => (
-                    <button
-                      key={lang.code}
-                      onClick={() => {
-                        setLanguage(lang.code as any)
-                        setIsLangMenuOpen(false)
-                      }}
-                      className={`w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-3 ${language === lang.code ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                        }`}
-                    >
-                      <span className="text-xl">{lang.flag}</span>
-                      <span className="text-sm">{lang.name}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
 
             <button
               onClick={toggleTheme}
@@ -131,15 +91,7 @@ export default function Header() {
             </button>
           </div>
 
-          {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center space-x-2">
-            <button
-              onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
-              className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800"
-              aria-label="Select language"
-            >
-              <span className="text-lg">{currentLang.flag}</span>
-            </button>
             <button
               onClick={toggleTheme}
               className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800"
@@ -206,27 +158,7 @@ export default function Header() {
           </div>
         )}
 
-        {/* Mobile Language Menu */}
-        {isLangMenuOpen && (
-          <div className="md:hidden mt-4 pb-4 grid grid-cols-2 gap-2">
-            {languages.map((lang) => (
-              <button
-                key={lang.code}
-                onClick={() => {
-                  setLanguage(lang.code as any)
-                  setIsLangMenuOpen(false)
-                }}
-                className={`px-4 py-2 rounded-lg text-left flex items-center space-x-2 ${language === lang.code
-                  ? 'bg-blue-100 dark:bg-blue-900/20'
-                  : 'bg-gray-100 dark:bg-gray-800'
-                  }`}
-              >
-                <span>{lang.flag}</span>
-                <span className="text-sm">{lang.name}</span>
-              </button>
-            ))}
-          </div>
-        )}
+
       </nav>
     </header>
   )
