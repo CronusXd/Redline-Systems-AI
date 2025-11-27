@@ -16,7 +16,16 @@ import {
   Home,
   MessageCircle,
   Image as ImageIcon,
-  Video
+  Video,
+  Mail,
+  Facebook,
+  Instagram,
+  Twitter,
+  Linkedin,
+  Send,
+  Music,
+  Youtube,
+  Eye
 } from 'lucide-react'
 
 export default function DashboardPage() {
@@ -77,8 +86,88 @@ const DashboardContent: React.FC = () => {
     { name: 'Atividades Hoje', value: consultas.filter(c => new Date(c.created_at).toDateString() === new Date().toDateString()).length.toString(), icon: Activity, color: 'text-green-400' },
   ]
 
-  const quickActions = [
-    { name: 'Nova Consulta', href: '/whatsapp', icon: MessageCircle, description: 'Iniciar nova análise de WhatsApp' },
+  const services = [
+    {
+      id: 'whatsapp',
+      name: 'WhatsApp',
+      icon: MessageCircle,
+      color: 'from-green-400 to-green-600',
+      bgColor: 'bg-green-500',
+      available: true,
+      href: '/whatsapp'
+    },
+    {
+      id: 'gmail',
+      name: 'Gmail',
+      icon: Mail,
+      color: 'from-red-400 to-red-600',
+      bgColor: 'bg-red-500',
+      available: false
+    },
+    {
+      id: 'facebook',
+      name: 'Facebook',
+      icon: Facebook,
+      color: 'from-blue-500 to-blue-700',
+      bgColor: 'bg-blue-600',
+      available: false
+    },
+    {
+      id: 'instagram',
+      name: 'Instagram',
+      icon: Instagram,
+      color: 'from-pink-500 to-purple-600',
+      bgColor: 'bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500',
+      available: false
+    },
+    {
+      id: 'twitter',
+      name: 'Twitter',
+      icon: Twitter,
+      color: 'from-sky-400 to-blue-500',
+      bgColor: 'bg-sky-500',
+      available: false
+    },
+    {
+      id: 'linkedin',
+      name: 'LinkedIn',
+      icon: Linkedin,
+      color: 'from-blue-600 to-blue-800',
+      bgColor: 'bg-blue-700',
+      available: false
+    },
+    {
+      id: 'telegram',
+      name: 'Telegram',
+      icon: Send,
+      color: 'from-sky-400 to-blue-500',
+      bgColor: 'bg-sky-500',
+      available: false
+    },
+    {
+      id: 'tiktok',
+      name: 'TikTok',
+      icon: Music,
+      color: 'from-black to-gray-900',
+      bgColor: 'bg-black',
+      available: false
+    },
+    {
+      id: 'kwai',
+      name: 'Kwai',
+      icon: Video,
+      color: 'from-orange-400 to-orange-600',
+      bgColor: 'bg-orange-500',
+      available: false
+    },
+    {
+      id: 'youtube',
+      name: 'YouTube',
+      icon: Youtube,
+      color: 'from-red-500 to-red-700',
+      bgColor: 'bg-red-600',
+      available: false
+    },
   ]
 
   return (
@@ -184,9 +273,6 @@ const DashboardContent: React.FC = () => {
                 <h3 className="text-lg font-medium text-white">
                   Consultas Recentes
                 </h3>
-                <Link href="/whatsapp" className="text-sm text-blue-400 hover:text-blue-300">
-                  Nova Consulta
-                </Link>
               </div>
               <div className="p-6">
                 {consultas.length > 0 ? (
@@ -200,6 +286,7 @@ const DashboardContent: React.FC = () => {
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Imagens</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Vídeos</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Ações</th>
                         </tr>
                       </thead>
                       <tbody className="bg-gray-800 divide-y divide-gray-700">
@@ -234,6 +321,14 @@ const DashboardContent: React.FC = () => {
                                 Concluído
                               </span>
                             </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <Link href={`/whatsapp?phone=${consulta.phone_number}`}>
+                                <Button variant="outline" size="sm" className="text-blue-400 border-blue-400 hover:bg-blue-400 hover:text-white">
+                                  <Eye className="w-4 h-4 mr-1" />
+                                  Ver
+                                </Button>
+                              </Link>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -262,28 +357,64 @@ const DashboardContent: React.FC = () => {
                 </h3>
               </div>
               <div className="p-6">
-                <div className="grid grid-cols-1 gap-4">
-                  {quickActions.map((action) => (
-                    <Link
-                      key={action.name}
-                      href={action.href}
-                      className="group block p-4 border border-gray-700 rounded-lg hover:border-blue-600 hover:shadow-lg transition-all duration-200 bg-gray-700/50"
-                    >
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0">
-                          <action.icon className="h-6 w-6 text-gray-400 group-hover:text-blue-400 transition-colors" />
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                  {services.map((service) => {
+                    const Icon = service.icon
+                    const isAvailable = service.available
+
+                    const CardContent = () => (
+                      <>
+                        {/* Icon */}
+                        <div className={`w-12 h-12 mx-auto mb-3 rounded-xl flex items-center justify-center ${isAvailable ? 'bg-white/20' : 'bg-gray-700/50'
+                          }`}>
+                          <Icon className={`w-6 h-6 ${isAvailable ? 'text-white' : 'text-gray-500'
+                            }`} />
                         </div>
-                        <div className="ml-4">
-                          <p className="text-sm font-medium text-white group-hover:text-blue-400 transition-colors">
-                            {action.name}
+
+                        {/* Name */}
+                        <p className={`font-bold text-sm ${isAvailable ? 'text-white' : 'text-gray-500'
+                          }`}>
+                          {service.name}
+                        </p>
+
+                        {/* Status */}
+                        {!service.available && (
+                          <p className="text-[10px] mt-1 text-gray-600">
+                            Em breve
                           </p>
-                          <p className="text-xs text-gray-400">
-                            {action.description}
-                          </p>
-                        </div>
+                        )}
+
+                        {/* Available Badge */}
+                        {isAvailable && (
+                          <div className="absolute top-3 right-3">
+                            <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                          </div>
+                        )}
+                      </>
+                    )
+
+                    if (isAvailable && service.href) {
+                      return (
+                        <Link
+                          key={service.id}
+                          href={service.href}
+                          className={`relative p-4 rounded-2xl transition-all duration-300 group text-center block ${`bg-gradient-to-br ${service.color} text-white shadow-lg hover:shadow-xl hover:scale-105 hover:-translate-y-1`
+                            }`}
+                        >
+                          <CardContent />
+                        </Link>
+                      )
+                    }
+
+                    return (
+                      <div
+                        key={service.id}
+                        className="relative p-4 rounded-2xl transition-all duration-300 text-center bg-gray-800/50 border border-gray-700 opacity-60 cursor-not-allowed"
+                      >
+                        <CardContent />
                       </div>
-                    </Link>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             </div>

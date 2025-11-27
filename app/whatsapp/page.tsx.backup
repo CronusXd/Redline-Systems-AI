@@ -3,15 +3,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { Phone, Play, Loader2, CheckCircle, ArrowLeft, Shield } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { useAuth } from '@/contexts/AuthContext'
-import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
 export default function WhatsAppPage() {
   const { t } = useLanguage()
-  const { user, loading: authLoading } = useAuth()
-  const router = useRouter()
-  const searchParams = useSearchParams()
   const terminalRef = useRef<HTMLDivElement>(null)
   const [mounted, setMounted] = useState(false)
   const [phoneNumber, setPhoneNumber] = useState('')
@@ -22,31 +17,16 @@ export default function WhatsAppPage() {
   const [progress, setProgress] = useState(0)
   const [currentPhase, setCurrentPhase] = useState(0)
   const [showResults, setShowResults] = useState(false)
-  const [terminalLines, setTerminalLines] = useState<Array<{ text: string, found?: boolean }>>([])
+  const [terminalLines, setTerminalLines] = useState<Array<{text: string, found?: boolean}>>([])
   const [searchingLines, setSearchingLines] = useState<string[]>([])
   const [recoveredImages, setRecoveredImages] = useState<string[]>([])
   const [recoveredVideos, setRecoveredVideos] = useState<string[]>([])
-  const [consultationData, setConsultationData] = useState<{ messages_count: number, images_count: number, videos_count: number } | null>(null)
-
+  const [consultationData, setConsultationData] = useState<{messages_count: number, images_count: number, videos_count: number} | null>(null)
 
   // Verificar se o componente está montado
   useEffect(() => {
     setMounted(true)
-    // Forçar dark mode
-    document.documentElement.classList.add('dark')
-    localStorage.setItem('theme', 'dark')
   }, [])
-
-  // Auto-start se tiver parâmetro phone
-  useEffect(() => {
-    if (mounted && !authLoading && user) {
-      const phoneParam = searchParams.get('phone')
-      if (phoneParam) {
-        setPhoneNumber(phoneParam)
-        startAnalysis(phoneParam)
-      }
-    }
-  }, [mounted, authLoading, user, searchParams])
 
   // Auto-scroll para o final do terminal
   useEffect(() => {
@@ -56,7 +36,7 @@ export default function WhatsAppPage() {
   }, [terminalLines, searchingLines])
 
   // Evitar problemas de hidratação - mostrar loading
-  if (!mounted || authLoading) {
+  if (!mounted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
         <div className="text-center">
@@ -69,7 +49,7 @@ export default function WhatsAppPage() {
 
   // Tempo total entre 60-90 segundos
   const totalDuration = Math.floor(Math.random() * 30000) + 60000 // 60-90s
-
+  
   const phases = [
     { nameKey: 'whatsapp.phase1', duration: totalDuration * 0.15 }, // 15%
     { nameKey: 'whatsapp.phase2', duration: totalDuration * 0.25 }, // 25%
@@ -99,19 +79,13 @@ export default function WhatsAppPage() {
 
   const generateMemoryDump = () => {
     const addr = generateRandomHash().substring(0, 8)
-    const bytes = Array.from({ length: 8 }, () =>
+    const bytes = Array.from({length: 8}, () => 
       Math.floor(Math.random() * 256).toString(16).padStart(2, '0')
     ).join(' ')
     return `0x${addr}: ${bytes}`
   }
 
   const validatePhoneNumber = async () => {
-    // Verificar autenticação antes de iniciar
-    if (!user) {
-      router.push('/auth/login?redirect=/whatsapp')
-      return
-    }
-
     if (!phoneNumber) return
 
     setIsValidating(true)
@@ -121,7 +95,7 @@ export default function WhatsAppPage() {
     try {
       // Limpar número (remover espaços, parênteses, hífens)
       let cleanNumber = phoneNumber.replace(/\D/g, '')
-
+      
       // Detectar e adicionar código do país automaticamente se não tiver
       // Brasil: números com 10 ou 11 dígitos (DDD + número)
       if (cleanNumber.length === 10 || cleanNumber.length === 11) {
@@ -131,7 +105,7 @@ export default function WhatsAppPage() {
           cleanNumber = '55' + cleanNumber // Adicionar código do Brasil
         }
       }
-
+      
       // Validação básica de tamanho
       if (cleanNumber.length < 10 || cleanNumber.length > 15) {
         setValidationError(t('whatsapp.error.invalid'))
@@ -157,7 +131,7 @@ export default function WhatsAppPage() {
 
       // Simular verificação com API do WhatsApp Business
       await new Promise(resolve => setTimeout(resolve, 2500))
-
+      
       // Validação de padrões por país (com código automático)
       const countryPatterns = [
         // Brasil
@@ -182,9 +156,9 @@ export default function WhatsAppPage() {
         // Argentina
         { pattern: /^54[1-9][0-9]{9}$/, name: 'Argentina' },
       ]
-
+      
       const matchedCountry = countryPatterns.find(cp => cp.pattern.test(cleanNumber))
-
+      
       if (!matchedCountry) {
         setValidationError(t('whatsapp.error.notfound'))
         setIsValidating(false)
@@ -199,7 +173,7 @@ export default function WhatsAppPage() {
         const c = parseInt(cleanNumber[i + 2])
         if (b === a + 1 && c === b + 1) sequentialCount++
       }
-
+      
       if (sequentialCount > 2) {
         setValidationError(t('whatsapp.error.invalid'))
         setIsValidating(false)
@@ -210,37 +184,38 @@ export default function WhatsAppPage() {
       console.log(`✓ Número validado: ${matchedCountry.name}`)
       setIsValidNumber(true)
       setIsValidating(false)
-
+      
       // Iniciar análise automaticamente após validação
-      // Passamos o número limpo diretamente para evitar problemas de estado assíncrono
-      startAnalysis(cleanNumber)
-
+      setTimeout(() => {
+        startAnalysis()
+      }, 500)
+        
     } catch (error) {
       setValidationError(t('whatsapp.error.notfound'))
       setIsValidating(false)
     }
   }
 
-  const generateRecoveredMedia = (imagesCount?: number, videosCount?: number) => {
+  const generateRecoveredMedia = () => {
     // Gerar 40-60 imagens de pessoas reais (serão exibidas censuradas)
     // Usando apenas fontes que garantem tons de pele visíveis (bege, rosa, marrom)
-    const imageCount = imagesCount || Math.floor(Math.random() * 21) + 40 // 40-60 imagens
-    const images = Array.from({ length: imageCount }, (_, i) => {
+    const imageCount = Math.floor(Math.random() * 21) + 40 // 40-60 imagens
+    const images = Array.from({length: imageCount}, (_, i) => {
       // Usar apenas Random User API que sempre retorna fotos de pessoas com tons de pele visíveis
       const gender = Math.random() > 0.5 ? 'women' : 'men'
       const id = Math.floor(Math.random() * 99)
       return `https://randomuser.me/api/portraits/${gender}/${id}.jpg?${i}`
     })
-
+    
     // Gerar 20-30 vídeos (thumbnails de pessoas, serão exibidos censurados)
-    const videoCount = videosCount || Math.floor(Math.random() * 11) + 20 // 20-30 vídeos
-    const videos = Array.from({ length: videoCount }, (_, i) => {
+    const videoCount = Math.floor(Math.random() * 11) + 20 // 20-30 vídeos
+    const videos = Array.from({length: videoCount}, (_, i) => {
       // Usar apenas Random User API que sempre retorna fotos de pessoas com tons de pele visíveis
       const gender = Math.random() > 0.5 ? 'women' : 'men'
       const id = Math.floor(Math.random() * 99)
       return `https://randomuser.me/api/portraits/${gender}/${id}.jpg?${1000 + i}`
     })
-
+    
     setRecoveredImages(images)
     setRecoveredVideos(videos)
   }
@@ -250,11 +225,11 @@ export default function WhatsAppPage() {
     // Média: 2-4 MB por imagem, 15-30 MB por vídeo
     const avgImageSize = (Math.random() * 2 + 2) // 2-4 MB
     const avgVideoSize = (Math.random() * 15 + 15) // 15-30 MB
-
+    
     const totalImageSize = recoveredImages.length * avgImageSize
     const totalVideoSize = recoveredVideos.length * avgVideoSize
     const totalSize = totalImageSize + totalVideoSize
-
+    
     // Converter para GB se maior que 1024 MB
     if (totalSize >= 1024) {
       return `${(totalSize / 1024).toFixed(1)} GB`
@@ -331,11 +306,8 @@ export default function WhatsAppPage() {
     return lines[phase] || []
   }
 
-  const startAnalysis = async (phoneOverride?: string) => {
-    const phoneToUse = phoneOverride || phoneNumber
-
-    // Se não tiver número (nem no state nem no override), aborta
-    if (!phoneToUse) return
+  const startAnalysis = async () => {
+    if (!phoneNumber || !isValidNumber) return
 
     setIsAnalyzing(true)
     setProgress(0)
@@ -343,53 +315,13 @@ export default function WhatsAppPage() {
     setShowResults(false)
     setTerminalLines([])
     setSearchingLines([])
-
-    let messagesCount = 0
-    let imagesCount = 0
-    let videosCount = 0
-
-    // Verificar se já existe consulta para este número
-    try {
-      const { checkExistingConsultation } = await import('@/app/actions/whatsapp')
-      const existingData = await checkExistingConsultation(phoneToUse)
-
-      if (existingData) {
-        console.log('✓ Consulta existente encontrada')
-
-        // Mostrar loading rápido (2 segundos)
-        setProgress(50)
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        setProgress(100)
-        await new Promise(resolve => setTimeout(resolve, 1000))
-
-        setConsultationData(existingData)
-        generateRecoveredMedia(existingData.images_count, existingData.videos_count)
-        setIsAnalyzing(false)
-        setShowResults(true)
-        return
-      }
-    } catch (error) {
-      console.error('Erro ao verificar consulta:', error)
-    }
-
-    // Nova consulta
-    console.log('✓ Nova consulta, iniciando simulação...')
-    messagesCount = Math.floor(Math.random() * 50) + 30
-    imagesCount = Math.floor(Math.random() * 21) + 40
-    videosCount = Math.floor(Math.random() * 11) + 20
-
-    setConsultationData({
-      messages_count: messagesCount,
-      images_count: imagesCount,
-      videos_count: videosCount
-    })
-
+    
     // Gerar mídias recuperadas
-    generateRecoveredMedia(imagesCount, videosCount)
+    generateRecoveredMedia()
 
     const phaseDurations = phases.map(p => p.duration)
     const totalTime = phaseDurations.reduce((sum, d) => sum + d, 0)
-
+    
     // Interval para atualizar progresso continuamente (1%, 2%, 3%...)
     const progressInterval = setInterval(() => {
       setProgress(prev => {
@@ -405,7 +337,7 @@ export default function WhatsAppPage() {
       setCurrentPhase(i)
       const phaseDuration = phaseDurations[i]
       const phaseLines = generateTerminalLine(i)
-
+      
       // Interval para códigos alternando (simulando busca)
       const searchInterval = setInterval(() => {
         setSearchingLines([
@@ -420,9 +352,9 @@ export default function WhatsAppPage() {
         const line = phaseLines[j]
         const isLastLine = j === phaseLines.length - 1
         const lineDelay = phaseDuration / phaseLines.length
-
+        
         await new Promise(resolve => setTimeout(resolve, lineDelay))
-
+        
         // Se for a última linha, marcar como "encontrada" com check
         if (isLastLine && (line.includes('[OK]') || line.includes('[SUCCESS]') || line.includes('[BREAK]') || line.includes('[COMPLETE]'))) {
           setTerminalLines(prev => [...prev, { text: line, found: true }])
@@ -438,18 +370,10 @@ export default function WhatsAppPage() {
     // Garantir que chegue a 100%
     clearInterval(progressInterval)
     setProgress(100)
-
-    // Salvar nova consulta
-    try {
-      const { saveConsultation } = await import('@/app/actions/whatsapp')
-      await saveConsultation(phoneToUse, messagesCount, imagesCount, videosCount)
-    } catch (error) {
-      console.error('Erro ao salvar consulta:', error)
-    }
-
+    
     // Pequeno delay antes de mostrar resultados
     await new Promise(resolve => setTimeout(resolve, 500))
-
+    
     setIsAnalyzing(false)
     setShowResults(true)
   }
@@ -527,7 +451,7 @@ export default function WhatsAppPage() {
                 ) : (
                   <>
                     <Play className="w-6 h-6" />
-                    <span>Start</span>
+                    <span>{t('whatsapp.start')}</span>
                   </>
                 )}
               </button>
@@ -563,7 +487,7 @@ export default function WhatsAppPage() {
               </div>
 
               {/* Terminal Console */}
-              <div
+              <div 
                 ref={terminalRef}
                 className="mb-8 bg-black rounded-xl p-6 font-mono text-sm h-96 overflow-y-auto scroll-smooth"
               >
@@ -575,14 +499,14 @@ export default function WhatsAppPage() {
                     <span>{line.text}</span>
                   </div>
                 ))}
-
+                
                 {/* Linhas alternando (simulando busca) */}
                 {searchingLines.map((line, index) => (
                   <div key={`search-${index}`} className="mb-1 text-gray-500 opacity-50">
                     <span className="text-gray-600">{`>`}</span> {line}
                   </div>
                 ))}
-
+                
                 {/* Cursor */}
                 <div className="text-green-400">
                   <span className="text-gray-500">{`>`}</span> <span className="animate-pulse">_</span>
@@ -594,12 +518,13 @@ export default function WhatsAppPage() {
                 {phases.map((phase, index) => (
                   <div
                     key={index}
-                    className={`p-4 rounded-xl border-2 transition-all duration-300 ${index === currentPhase
-                      ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                      : index < currentPhase
+                    className={`p-4 rounded-xl border-2 transition-all duration-300 ${
+                      index === currentPhase
+                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                        : index < currentPhase
                         ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
                         : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'
-                      }`}
+                    }`}
                   >
                     <div className="flex items-center space-x-3">
                       {index < currentPhase ? (
@@ -609,8 +534,9 @@ export default function WhatsAppPage() {
                       ) : (
                         <div className="w-6 h-6 rounded-full border-2 border-gray-300 dark:border-gray-600" />
                       )}
-                      <span className={`font-medium ${index <= currentPhase ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
-                        }`}>
+                      <span className={`font-medium ${
+                        index <= currentPhase ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
+                      }`}>
                         {t(phase.nameKey)}
                       </span>
                     </div>
@@ -632,14 +558,14 @@ export default function WhatsAppPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl border-2 border-blue-200 dark:border-blue-800">
                   <h4 className="font-semibold mb-4 text-gray-900 dark:text-white">{t('whatsapp.conversations')}</h4>
-                  <p className="text-4xl font-bold text-blue-600 dark:text-blue-400">{consultationData?.messages_count || 0}</p>
+                  <p className="text-4xl font-bold text-blue-600 dark:text-blue-400">{Math.floor(Math.random() * 50) + 30}</p>
                 </div>
-
+                
                 <div className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl border-2 border-purple-200 dark:border-purple-800">
                   <h4 className="font-semibold mb-4 text-gray-900 dark:text-white">{t('whatsapp.images')}</h4>
                   <p className="text-4xl font-bold text-purple-600 dark:text-purple-400">{recoveredImages.length}</p>
                 </div>
-
+                
                 <div className="p-6 bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-800/20 rounded-xl border-2 border-pink-200 dark:border-pink-800">
                   <h4 className="font-semibold mb-4 text-gray-900 dark:text-white">{t('whatsapp.videos')}</h4>
                   <p className="text-4xl font-bold text-pink-600 dark:text-pink-400">{recoveredVideos.length}</p>
@@ -655,11 +581,11 @@ export default function WhatsAppPage() {
                 <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-8 gap-2">
                   {recoveredImages.map((img, i) => (
                     <div key={i} className="aspect-square rounded-lg overflow-hidden relative group cursor-pointer bg-gray-700">
-                      <img
-                        src={img}
-                        alt={`Recovered ${i + 1}`}
+                      <img 
+                        src={img} 
+                        alt={`Recovered ${i+1}`}
                         className="w-full h-full object-cover"
-                        style={{
+                        style={{ 
                           filter: 'blur(12px) brightness(1)',
                           transform: 'scale(1.05)'
                         }}
@@ -667,17 +593,17 @@ export default function WhatsAppPage() {
                       />
                       {/* Ícone de olho cortado no centro */}
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <svg
-                          className="w-6 h-6 text-white/80 drop-shadow-lg"
-                          fill="none"
-                          stroke="currentColor"
+                        <svg 
+                          className="w-6 h-6 text-white/80 drop-shadow-lg" 
+                          fill="none" 
+                          stroke="currentColor" 
                           viewBox="0 0 24 24"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2.5}
-                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                          <path 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            strokeWidth={2.5} 
+                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" 
                           />
                         </svg>
                       </div>
@@ -695,11 +621,11 @@ export default function WhatsAppPage() {
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                   {recoveredVideos.map((video, i) => (
                     <div key={i} className="aspect-video rounded-lg overflow-hidden relative group cursor-pointer bg-gray-700">
-                      <img
-                        src={video}
-                        alt={`Video ${i + 1}`}
+                      <img 
+                        src={video} 
+                        alt={`Video ${i+1}`}
                         className="w-full h-full object-cover"
-                        style={{
+                        style={{ 
                           filter: 'blur(12px) brightness(1)',
                           transform: 'scale(1.05)'
                         }}
@@ -707,17 +633,17 @@ export default function WhatsAppPage() {
                       />
                       {/* Ícone de olho cortado no centro */}
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <svg
-                          className="w-8 h-8 text-white/80 drop-shadow-lg"
-                          fill="none"
-                          stroke="currentColor"
+                        <svg 
+                          className="w-8 h-8 text-white/80 drop-shadow-lg" 
+                          fill="none" 
+                          stroke="currentColor" 
                           viewBox="0 0 24 24"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2.5}
-                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                          <path 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            strokeWidth={2.5} 
+                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" 
                           />
                         </svg>
                       </div>
@@ -725,7 +651,7 @@ export default function WhatsAppPage() {
                       <div className="absolute bottom-2 left-2">
                         <div className="bg-black/60 rounded-sm p-1.5 flex items-center justify-center">
                           <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M8 5v14l11-7z" />
+                            <path d="M8 5v14l11-7z"/>
                           </svg>
                         </div>
                       </div>
@@ -749,7 +675,7 @@ export default function WhatsAppPage() {
                     {t('whatsapp.download.description')}
                   </p>
                 </div>
-
+                
                 <button
                   onClick={() => {
                     // Simular download
@@ -765,7 +691,7 @@ export default function WhatsAppPage() {
                   </svg>
                   <span>{t('whatsapp.download.button')}</span>
                 </button>
-
+                
                 <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
                   {t('whatsapp.download.size').replace('2.4 GB', calculateZipSize()).replace('2.4 GB', calculateZipSize())}
                 </p>

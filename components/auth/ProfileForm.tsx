@@ -144,7 +144,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ className }) => {
       <div className="flex items-center justify-center p-8">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Carregando perfil...</p>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">Carregando perfil...</p>
         </div>
       </div>
     )
@@ -152,16 +152,16 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ className }) => {
 
   return (
     <div className={clsx('w-full max-w-2xl mx-auto', className)}>
-      <div className="bg-white shadow-lg rounded-lg p-6">
+      <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
-            <div className="bg-blue-100 p-2 rounded-full">
-              <User className="h-6 w-6 text-blue-600" />
+            <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full">
+              <User className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Meu Perfil</h2>
-              <p className="text-gray-600">Gerencie suas informações pessoais</p>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Meu Perfil</h2>
+              <p className="text-gray-600 dark:text-gray-400">Gerencie suas informações pessoais</p>
             </div>
           </div>
 
@@ -169,15 +169,16 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ className }) => {
             variant="outline"
             onClick={handleLogout}
             leftIcon={<LogOut className="h-4 w-4" />}
+            className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
           >
             Sair
           </Button>
         </div>
 
         {/* Informações da conta */}
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <h3 className="font-medium text-gray-900 mb-2">Informações da Conta</h3>
-          <div className="space-y-1 text-sm text-gray-600">
+        <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+          <h3 className="font-medium text-gray-900 dark:text-white mb-2">Informações da Conta</h3>
+          <div className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
             <p><span className="font-medium">Email:</span> {user.email}</p>
             {profile.created_at && (
               <p><span className="font-medium">Conta criada em:</span> {new Date(profile.created_at).toLocaleDateString('pt-BR')}</p>
@@ -190,14 +191,14 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ className }) => {
 
         {/* Mensagem de sucesso */}
         {successMessage && (
-          <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded-md">
+          <div className="mb-4 p-3 bg-green-100 dark:bg-green-900/30 border border-green-400 dark:border-green-800 text-green-700 dark:text-green-300 rounded-md">
             {successMessage}
           </div>
         )}
 
         {/* Mensagem de erro */}
         {submitError && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md">
+          <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-300 rounded-md">
             {submitError}
           </div>
         )}
@@ -214,6 +215,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ className }) => {
             required
             placeholder="Digite seu nome completo"
             autoComplete="name"
+            className="dark:text-white"
           />
 
           {/* Telefone */}
@@ -227,6 +229,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ className }) => {
             placeholder="(11) 99999-9999"
             helperText="Opcional - formato: (11) 99999-9999"
             autoComplete="tel"
+            className="dark:text-white"
           />
 
           {/* Botões de ação */}
@@ -247,6 +250,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ className }) => {
                 variant="outline"
                 onClick={handleReset}
                 disabled={isLoading}
+                className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
               >
                 Cancelar
               </Button>
@@ -255,9 +259,9 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ className }) => {
         </form>
 
         {/* Informações adicionais */}
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <h3 className="font-medium text-gray-900 mb-2">Segurança</h3>
-          <p className="text-sm text-gray-600 mb-3">
+        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <h3 className="font-medium text-gray-900 dark:text-white mb-2">Segurança</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
             Para alterar seu email ou senha, entre em contato com o suporte.
           </p>
           <Button
@@ -267,6 +271,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ className }) => {
               // TODO: Implementar mudança de senha
               alert('Funcionalidade de alteração de senha será implementada em breve')
             }}
+            className="dark:text-gray-300 dark:hover:bg-gray-700"
           >
             Alterar senha
           </Button>
