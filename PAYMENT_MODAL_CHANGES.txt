@@ -1,0 +1,140 @@
+// Modal de Pagamento com Timer - Para integrar no WhatsApp Page
+
+// 1. ADICIONAR AO STATE (linha ~37):
+const [timeRemaining, setTimeRemaining] = useState<number>(1200) // 20 minutes in seconds
+const [hasActivePayment, setHasActivePayment] = useState(false)
+
+// 2. SUBSTITUIR handlePayment (linha ~464):
+const handlePayment = async () => {
+  if (!user) {
+    router.push('/auth/login?redirect=/whatsapp')
+    return
+  }
+
+  try {
+    setIsCheckingPayment(true)
+
+    // Verificar se já existe um pagamento ativo
+    const { getActivePayment } = await import('@/app/actions/active-payment')
+    const activePaymentResult = await getActivePayment(user.id, phoneNumber)
+
+    if (activePaymentResult.hasActivePayment && activePaymentResult.qrCode) {
+      // Já existe um QR code ativo, mostrar ele
+      setPaymentId(activePaymentResult.paymentId || null)
+      setPixCopyPaste(activePaymentResult.qrCode)
+      setPaymentStatus('pending')
+      setTimeRemaining(activePaymentResult.timeRemaining || 1200)
+      setHasActivePayment(true)
+      setShowPaymentModal(true)
+      setIsCheckingPayment(false)
+
+      // Start polling for existing payment
+      startPaymentPolling(activePaymentResult.paymentId!)
+      return
+    }
+
+    // Não há pagamento ativo, criar novo
+    const { createPixPayment } = await import('@/app/actions/pixgo')
+    const { saveQRCode } = await import('@/app/actions/active-payment')
+    
+    const result = await createPixPayment(
+      10.00,
+      user.user_metadata?.full_name || user.email?.split('@')[0],
+      user.email
+    )
+
+    if (result.success && result.payment_id && result.qr_code) {
+      // Salvar no Supabase
+      await saveQRCode(user.id, result.payment_id, phoneNumber, result.qr_code, 10.00)
+
+      setPaymentId(result.payment_id)
+      setPixCopyPaste(result.qr_code)
+      setPaymentStatus('pending')
+      setTimeRemaining(1200) // 20 minutes
+      setHasActivePayment(true)
+      setShowPaymentModal(true)
+      setIsCheckingPayment(false)
+
+      // Start polling
+      startPaymentPolling(result.payment_id)
+    } else {
+      alert('Erro ao gerar pagamento: ' + (result.error || 'Tente novamente.'))
+      setShowPaymentModal(false)
+      setIsCheckingPayment(false)
+    }
+  } catch (error) {
+    console.error('Payment error:', error)
+    alert('Erro ao processar pagamento.')
+    setShowPaymentModal(false)
+    setIsCheckingPayment(false)
+  }
+}
+
+// 3. ADICIONAR NOVAS FUNÇÕES (depois do handlePayment):
+const startPaymentPolling = (paymentIdToCheck: string) => {
+  const pollInterval = setInterval(async () => {
+    const { checkPixPaymentStatus } = await import('@/app/actions/pixgo')
+    const statusResult = await checkPixPaymentStatus(paymentIdToCheck)
+
+    if (statusResult.success) {
+      setPaymentStatus(statusResult.status as any)
+
+      if (statusResult.status === 'completed') {
+        clearInterval(pollInterval)
+        setShowPaymentModal(false)
+        setIsCheckingPayment(false)
+        setHasActivePayment(false)
+        // Success - unlock content
+      } else if (statusResult.status === 'expired' || statusResult.status === 'cancelled') {
+        clearInterval(pollInterval)
+        setIsCheckingPayment(false)
+        setHasActivePayment(false)
+      }
+    }
+  }, 3000) // Check every 3 seconds
+}
+
+// Timer countdown effect
+useEffect(() => {
+  if (showPaymentModal && paymentStatus === 'pending' && timeRemaining > 0) {
+    const timer = setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev <= 1) {
+          setPaymentStatus('expired')
+          setHasActivePayment(false)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }
+}, [showPaymentModal, paymentStatus, timeRemaining])
+
+// Format time remaining
+const formatTime = (seconds: number) => {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+}
+
+// 4. ATUALIZAR O MODAL (linha ~946):
+// Substituir o div com className="text-center mb-6" por:
+<div className="text-center mb-6">
+  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Pagamento via PIX</h3>
+  
+  {/* Timer Countdown */}
+  <div className="flex items-center justify-center space-x-2 mb-4">
+    <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    <span className={`text-lg font-mono font-bold ${timeRemaining < 300 ? 'text-red-600 dark:text-red-400 animate-pulse' : 'text-blue-600 dark:text-blue-400'}`}>
+      {formatTime(timeRemaining)}
+    </span>
+  </div>
+
+  <p className="text-gray-600 dark:text-gray-400">
+    Escaneie o QR Code ou copie o código para liberar o acesso.
+  </p>
+</div>
