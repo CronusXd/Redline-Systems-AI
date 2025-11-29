@@ -970,38 +970,7 @@ export default function WhatsAppPage() {
                 </div>
               </div>
 
-              {/* Botão de Download */}
-              <div className="p-8 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-200 dark:border-green-800 rounded-xl mb-6">
-                <div className="text-center mb-6">
-                  <CheckCircle className="w-16 h-16 text-green-600 dark:text-green-400 mx-auto mb-4" />
-                  <h4 className="font-bold text-2xl mb-2 text-gray-900 dark:text-white">
-                    {t('whatsapp.download.title')}
-                  </h4>
-                  <p className="text-gray-700 dark:text-gray-300 mb-6">
-                    {t('whatsapp.download.description')}
-                  </p>
-                </div>
 
-                <button
-                  onClick={() => {
-                    // Simular download
-                    const link = document.createElement('a')
-                    link.href = '#'
-                    link.download = `whatsapp_recovery_${phoneNumber}.zip`
-                    link.click()
-                  }}
-                  className="w-full py-4 px-6 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-semibold text-lg hover:from-green-600 hover:to-green-700 transition-all shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  <span>{t('whatsapp.download.button')}</span>
-                </button>
-
-                <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
-                  {t('whatsapp.download.size').replace('2.4 GB', calculateZipSize()).replace('2.4 GB', calculateZipSize())}
-                </p>
-              </div>
 
               {/* Botão de Pagamento */}
               <div className="mb-6">
@@ -1053,48 +1022,48 @@ export default function WhatsAppPage() {
 
       {/* Payment Modal */}
       {showPaymentModal && pixCopyPaste && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-sm w-full p-6 relative my-8 animate-in fade-in zoom-in duration-200">
             {/* Close Button */}
             <button
               onClick={handleClosePaymentModal}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5" />
             </button>
 
             {/* Header */}
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full mb-4">
-                <Lock className="w-8 h-8 text-green-600 dark:text-green-400" />
+            <div className="text-center mb-4">
+              <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-full mb-3">
+                <Lock className="w-6 h-6 text-green-600 dark:text-green-400" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
                 Pagamento PIX
               </h3>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 Escaneie o QR Code ou copie o código
               </p>
             </div>
 
             {/* Timer */}
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 mb-6 text-center">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Tempo restante</p>
-              <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 font-mono">
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3 mb-4 text-center">
+              <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Tempo restante</p>
+              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 font-mono">
                 {formatTime(timeRemaining)}
               </p>
             </div>
 
             {/* Status */}
             {paymentStatus && (
-              <div className={`mb-6 p-4 rounded-xl ${paymentStatus === 'pending' ? 'bg-yellow-50 dark:bg-yellow-900/20' :
-                paymentStatus === 'completed' ? 'bg-green-50 dark:bg-green-900/20' :
-                  paymentStatus === 'expired' ? 'bg-red-50 dark:bg-red-900/20' :
-                    'bg-gray-50 dark:bg-gray-900/20'
+              <div className={`mb-4 p-3 rounded-xl ${paymentStatus === 'pending' ? 'bg-yellow-50 dark:bg-yellow-900/20' :
+                  paymentStatus === 'completed' ? 'bg-green-50 dark:bg-green-900/20' :
+                    paymentStatus === 'expired' ? 'bg-red-50 dark:bg-red-900/20' :
+                      'bg-gray-50 dark:bg-gray-900/20'
                 }`}>
-                <p className={`text-center font-medium ${paymentStatus === 'pending' ? 'text-yellow-700 dark:text-yellow-300' :
-                  paymentStatus === 'completed' ? 'text-green-700 dark:text-green-300' :
-                    paymentStatus === 'expired' ? 'text-red-700 dark:text-red-300' :
-                      'text-gray-700 dark:text-gray-300'
+                <p className={`text-center text-sm font-medium ${paymentStatus === 'pending' ? 'text-yellow-700 dark:text-yellow-300' :
+                    paymentStatus === 'completed' ? 'text-green-700 dark:text-green-300' :
+                      paymentStatus === 'expired' ? 'text-red-700 dark:text-red-300' :
+                        'text-gray-700 dark:text-gray-300'
                   }`}>
                   {paymentStatus === 'pending' && '⏳ Aguardando pagamento...'}
                   {paymentStatus === 'completed' && '✅ Pagamento confirmado!'}
@@ -1106,20 +1075,20 @@ export default function WhatsAppPage() {
 
             {/* QR Code */}
             {paymentStatus === 'pending' && (
-              <div className="mb-6">
-                <div className="bg-white p-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 flex justify-center">
+              <div className="mb-4 flex justify-center">
+                <div className="p-2 bg-white rounded-xl">
                   <img
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pixCopyPaste)}`}
                     alt="QR Code PIX"
-                    className="w-48 h-48"
+                    className="w-44 h-44 mix-blend-multiply"
                   />
                 </div>
               </div>
             )}
 
             {/* Copy Paste Input */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+            <div className="mb-4">
+              <label className="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-300">
                 Pix Copia e Cola
               </label>
               <div className="flex space-x-2">
@@ -1127,28 +1096,28 @@ export default function WhatsAppPage() {
                   type="text"
                   readOnly
                   value={pixCopyPaste}
-                  className="flex-1 px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-mono text-gray-900 dark:text-white"
+                  className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-mono text-gray-900 dark:text-white"
                 />
                 <button
                   onClick={() => copyToClipboard(pixCopyPaste)}
-                  className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors"
+                  className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                 >
-                  <Copy className="w-5 h-5" />
+                  <Copy className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
             {/* Info */}
-            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 mb-6">
-              <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 mb-4">
+              <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
                 💰 Valor: <span className="font-bold text-gray-900 dark:text-white">R$ 10,00</span>
               </p>
             </div>
 
             {/* Auto-check status */}
             {isCheckingPayment && (
-              <div className="flex items-center justify-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-                <Loader2 className="w-4 h-4 animate-spin" />
+              <div className="flex items-center justify-center space-x-2 text-xs text-gray-600 dark:text-gray-400">
+                <Loader2 className="w-3 h-3 animate-spin" />
                 <span>Verificando automaticamente...</span>
               </div>
             )}
