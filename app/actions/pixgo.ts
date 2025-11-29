@@ -1,5 +1,7 @@
 'use server'
 
+import { createServerSupabaseClient } from '@/lib/supabase/server'
+
 const PIXGO_API_URL = 'https://pixgo.org/api/v1'
 const PIXGO_API_KEY = process.env.PIXGO_API_KEY
 
@@ -74,6 +76,26 @@ export async function checkPixPaymentStatus(paymentId: string): Promise<PaymentS
     }
 
     try {
+        // PRIMEIRO: Verificar se há uma simulação no Supabase
+        const supabase = createServerSupabaseClient()
+        const { data: supabasePayment, error: supabaseError } = await supabase
+            .from('payment_attempts')
+            .select('status')
+            .eq('payment_id', paymentId)
+            .single()
+
+        // Se encontrou no Supabase e está completed, retornar isso (simulação)
+        // Isso permite que o botão "Simular Pagamento" funcione
+        if (supabasePayment?.status === 'completed') {
+            console.log(`[PixGo] Simulação detectada para ${paymentId}: completed`)
+            return {
+                success: true,
+                status: 'completed'
+            }
+        }
+
+        // SEGUNDO: Consultar API PixGo para pagamentos reais
+        console.log(`[PixGo] Consultando API real para ${paymentId}`)
         const response = await fetch(`${PIXGO_API_URL}/payment/${paymentId}/status`, {
             method: 'GET',
             headers: {
@@ -88,10 +110,19 @@ export async function checkPixPaymentStatus(paymentId: string): Promise<PaymentS
             return { success: false, error: result.message || 'Failed to check status' }
         }
 
+        // Se a API PixGo retornar completed, atualizar no Supabase também
+        const apiStatus = result.data?.status || result.status
+        if (apiStatus === 'completed' && supabasePayment) {
+            await supabase
+                .from('payment_attempts')
+                .update({ status: 'completed', updated_at: new Date().toISOString() })
+                .eq('payment_id', paymentId)
+        }
+
         // API returns: { success: true, data: { status: 'pending' | 'completed' | ... } }
         return {
             success: true,
-            status: result.data?.status || result.status
+            status: apiStatus
         }
     } catch (error) {
         console.error('PixGo Check Status Exception:', error)

@@ -18,13 +18,13 @@ interface RetryLimitResult {
 }
 
 /**
- * Verifica se o usuário pode gerar um novo QR code
+ * Verifica se o usuário pode gerar um novo QR code para um número específico
  * Regras:
- * - Máximo 2 QR codes não pagos (expired/cancelled) por dia
- * - Máximo 5 QR codes com erro real (failed) por dia
+ * - Máximo 2 QR codes não pagos (expired/cancelled) por dia PARA ESTE NÚMERO
+ * - Máximo 5 QR codes com erro real (failed) por dia PARA ESTE NÚMERO
  * - Intervalo de 30 minutos entre QR codes não pagos
  */
-export async function checkPaymentLimit(userId: string): Promise<PaymentLimitResult> {
+export async function checkPaymentLimit(userId: string, phoneNumber: string): Promise<PaymentLimitResult> {
     const supabase = createServerSupabaseClient()
 
     // Data de 24 horas atrás
@@ -32,11 +32,12 @@ export async function checkPaymentLimit(userId: string): Promise<PaymentLimitRes
     yesterday.setHours(yesterday.getHours() - 24)
 
     try {
-        // Contar QR codes não pagos (expired/cancelled) nas últimas 24h
+        // Contar QR codes não pagos (expired/cancelled) nas últimas 24h para este número
         const { data: unpaidAttempts, error: unpaidError } = await supabase
             .from('payment_attempts')
             .select('*')
             .eq('user_id', userId)
+            .eq('phone_number', phoneNumber) // Filtra pelo número
             .in('status', ['expired', 'cancelled'])
             .eq('is_simulated_error', false)
             .gte('created_at', yesterday.toISOString())
@@ -46,11 +47,12 @@ export async function checkPaymentLimit(userId: string): Promise<PaymentLimitRes
 
         const unpaidCount = unpaidAttempts?.length || 0
 
-        // Contar QR codes com erro real (failed) nas últimas 24h
+        // Contar QR codes com erro real (failed) nas últimas 24h para este número
         const { data: failedAttempts, error: failedError } = await supabase
             .from('payment_attempts')
             .select('*')
             .eq('user_id', userId)
+            .eq('phone_number', phoneNumber) // Filtra pelo número
             .eq('status', 'failed')
             .eq('is_simulated_error', false)
             .gte('created_at', yesterday.toISOString())
@@ -59,25 +61,25 @@ export async function checkPaymentLimit(userId: string): Promise<PaymentLimitRes
 
         const failedCount = failedAttempts?.length || 0
 
-        // Verificar limite de não pagos (2 por dia)
+        // Verificar limite de não pagos (2 por dia por número)
         if (unpaidCount >= 2) {
             return {
                 canGenerate: false,
                 unpaidCount,
                 failedCount,
                 waitTimeRemaining: 0,
-                message: 'Você atingiu o limite de 2 QR codes não pagos por dia.'
+                message: 'Você atingiu o limite de 2 QR codes não pagos por dia para este número.'
             }
         }
 
-        // Verificar limite de erros reais (5 por dia)
+        // Verificar limite de erros reais (5 por dia por número)
         if (failedCount >= 5) {
             return {
                 canGenerate: false,
                 unpaidCount,
                 failedCount,
                 waitTimeRemaining: 0,
-                message: 'Você atingiu o limite de 5 tentativas com erro por dia.'
+                message: 'Você atingiu o limite de 5 tentativas com erro por dia para este número.'
             }
         }
 
@@ -96,7 +98,7 @@ export async function checkPaymentLimit(userId: string): Promise<PaymentLimitRes
                         unpaidCount,
                         failedCount,
                         waitTimeRemaining,
-                        message: `Aguarde ${waitTimeRemaining} minutos para gerar um novo QR code.`
+                        message: `Aguarde ${waitTimeRemaining} minutos para gerar um novo QR code para este número.`
                     }
                 }
             }

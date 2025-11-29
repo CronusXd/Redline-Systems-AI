@@ -45,6 +45,27 @@ export default function WhatsAppPage() {
   const [autoGenerateTimer, setAutoGenerateTimer] = useState<number>(0)
   const [isWaitingAutoGenerate, setIsWaitingAutoGenerate] = useState(false)
 
+  // Dev Tools
+  const [simulateRealError, setSimulateRealError] = useState(false)
+
+  const handleSimulatePayment = async () => {
+    if (!paymentId) return
+
+    try {
+      const { updatePaymentStatus } = await import('@/app/actions/payment-limits')
+      const result = await updatePaymentStatus(paymentId, 'completed')
+
+      if (result.success) {
+        alert('Pagamento simulado com sucesso! Aguarde o polling...')
+      } else {
+        alert('Erro ao simular pagamento.')
+      }
+    } catch (error) {
+      console.error('Error simulating payment:', error)
+      alert('Erro ao simular pagamento.')
+    }
+  }
+
 
   // Verificar se o componente está montado
   useEffect(() => {
@@ -112,6 +133,19 @@ export default function WhatsAppPage() {
     try {
       setIsCheckingPayment(true)
 
+      // Verificar limites antes de tudo
+      const { checkPaymentLimit } = await import('@/app/actions/payment-limits')
+      const limitResult = await checkPaymentLimit(user.id, phoneNumber)
+
+      if (!limitResult.canGenerate) {
+        setErrorMessage(limitResult.message || 'Limite atingido.')
+        setShowErrorModal(true)
+        setIsCheckingPayment(false)
+        // Garantir que não mostre timer de auto-geração
+        setIsWaitingAutoGenerate(false)
+        return
+      }
+
       // Verificar se já existe um pagamento ativo
       const { getActivePayment } = await import('@/app/actions/active-payment')
       const activePaymentResult = await getActivePayment(user.id, phoneNumber)
@@ -177,6 +211,17 @@ export default function WhatsAppPage() {
     pollIntervalRef.current = setInterval(async () => {
       try {
         const { checkPixPaymentStatus } = await import('@/app/actions/pixgo')
+
+        // Simulação de Erro Real (Rede/API)
+        if (simulateRealError) {
+          if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
+          setErrorMessage("Erro de conexão com o servidor de pagamento. Verifique sua internet e tente novamente.")
+          setShowErrorModal(true)
+          setIsCheckingPayment(false)
+          setIsWaitingAutoGenerate(false) // Não é erro do loop, é erro real
+          return
+        }
+
         const statusResult = await checkPixPaymentStatus(paymentIdToCheck)
 
         if (statusResult && statusResult.success) {
@@ -1056,14 +1101,14 @@ export default function WhatsAppPage() {
             {/* Status */}
             {paymentStatus && (
               <div className={`mb-4 p-3 rounded-xl ${paymentStatus === 'pending' ? 'bg-yellow-50 dark:bg-yellow-900/20' :
-                  paymentStatus === 'completed' ? 'bg-green-50 dark:bg-green-900/20' :
-                    paymentStatus === 'expired' ? 'bg-red-50 dark:bg-red-900/20' :
-                      'bg-gray-50 dark:bg-gray-900/20'
+                paymentStatus === 'completed' ? 'bg-green-50 dark:bg-green-900/20' :
+                  paymentStatus === 'expired' ? 'bg-red-50 dark:bg-red-900/20' :
+                    'bg-gray-50 dark:bg-gray-900/20'
                 }`}>
                 <p className={`text-center text-sm font-medium ${paymentStatus === 'pending' ? 'text-yellow-700 dark:text-yellow-300' :
-                    paymentStatus === 'completed' ? 'text-green-700 dark:text-green-300' :
-                      paymentStatus === 'expired' ? 'text-red-700 dark:text-red-300' :
-                        'text-gray-700 dark:text-gray-300'
+                  paymentStatus === 'completed' ? 'text-green-700 dark:text-green-300' :
+                    paymentStatus === 'expired' ? 'text-red-700 dark:text-red-300' :
+                      'text-gray-700 dark:text-gray-300'
                   }`}>
                   {paymentStatus === 'pending' && '⏳ Aguardando pagamento...'}
                   {paymentStatus === 'completed' && '✅ Pagamento confirmado!'}
@@ -1114,13 +1159,6 @@ export default function WhatsAppPage() {
               </p>
             </div>
 
-            {/* Auto-check status */}
-            {isCheckingPayment && (
-              <div className="flex items-center justify-center space-x-2 text-xs text-gray-600 dark:text-gray-400">
-                <Loader2 className="w-3 h-3 animate-spin" />
-                <span>Verificando automaticamente...</span>
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -1169,6 +1207,28 @@ export default function WhatsAppPage() {
           </div>
         </div>
       )}
-    </div>
+
+      {/* Dev Tools: Test Buttons (OCULTOS) */}
+      {/* <div className="fixed bottom-4 right-4 flex flex-col space-y-2 z-50">
+        <button
+          onClick={() => setSimulateRealError(!simulateRealError)}
+          className={`px-3 py-2 rounded-lg text-xs font-bold shadow-lg transition-all ${simulateRealError
+            ? 'bg-red-600 text-white animate-pulse'
+            : 'bg-gray-800 text-white hover:bg-gray-700'
+            }`}
+        >
+          {simulateRealError ? '⚠️ Erro Rede ATIVO' : '⚡ Simular Erro Rede'}
+        </button>
+
+        {showPaymentModal && paymentId && (
+          <button
+            onClick={handleSimulatePayment}
+            className="px-3 py-2 bg-green-600 text-white rounded-lg text-xs font-bold shadow-lg hover:bg-green-700 transition-all"
+          >
+            💸 Simular Pagamento
+          </button>
+        )}
+      </div> */}
+    </div >
   )
 }
