@@ -26,6 +26,7 @@ interface RetryLimitResult {
  */
 export async function checkPaymentLimit(userId: string, phoneNumber: string): Promise<PaymentLimitResult> {
     const supabase = createServerSupabaseClient()
+    const cleanNumber = phoneNumber.replace(/\D/g, '')
 
     // Data de 24 horas atrás
     const yesterday = new Date()
@@ -37,7 +38,7 @@ export async function checkPaymentLimit(userId: string, phoneNumber: string): Pr
             .from('payment_attempts')
             .select('*')
             .eq('user_id', userId)
-            .eq('phone_number', phoneNumber) // Filtra pelo número
+            .eq('phone_number', cleanNumber) // Filtra pelo número
             .in('status', ['expired', 'cancelled'])
             .eq('is_simulated_error', false)
             .gte('created_at', yesterday.toISOString())
@@ -52,7 +53,7 @@ export async function checkPaymentLimit(userId: string, phoneNumber: string): Pr
             .from('payment_attempts')
             .select('*')
             .eq('user_id', userId)
-            .eq('phone_number', phoneNumber) // Filtra pelo número
+            .eq('phone_number', cleanNumber) // Filtra pelo número
             .eq('status', 'failed')
             .eq('is_simulated_error', false)
             .gte('created_at', yesterday.toISOString())
@@ -86,6 +87,34 @@ export async function checkPaymentLimit(userId: string, phoneNumber: string): Pr
         // Verificar intervalo de 30 minutos entre QR codes não pagos
         if (unpaidCount > 0 && unpaidAttempts && unpaidAttempts.length > 0) {
             const lastAttempt = unpaidAttempts[0]
+
+            // Buscar último pagamento completado (com sucesso ou erro simulado)
+            const { data: lastCompleted } = await supabase
+                .from('payment_attempts')
+                .select('created_at')
+                .eq('user_id', userId)
+                .eq('phone_number', cleanNumber)
+                .eq('status', 'completed')
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single()
+
+            // Se houve um pagamento completado DEPOIS do último não pago, ignorar o bloqueio
+            if (lastCompleted && lastCompleted.created_at && lastAttempt.created_at) {
+                const completedTime = new Date(lastCompleted.created_at)
+                const unpaidTime = new Date(lastAttempt.created_at)
+
+                // Se pagou depois do erro, libera
+                if (completedTime > unpaidTime) {
+                    return {
+                        canGenerate: true,
+                        unpaidCount,
+                        failedCount,
+                        waitTimeRemaining: 0
+                    }
+                }
+            }
+
             if (lastAttempt.created_at) {
                 const lastAttemptTime = new Date(lastAttempt.created_at)
                 const now = new Date()
@@ -208,6 +237,7 @@ export async function recordPaymentAttempt(
     isSimulatedError: boolean = false
 ) {
     const supabase = createServerSupabaseClient()
+    const cleanNumber = phoneNumber.replace(/\D/g, '')
 
     try {
         const { error } = await supabase
@@ -215,7 +245,7 @@ export async function recordPaymentAttempt(
             .insert({
                 user_id: userId,
                 payment_id: paymentId,
-                phone_number: phoneNumber,
+                phone_number: cleanNumber,
                 qr_code: '', // Will be updated later
                 amount,
                 status,

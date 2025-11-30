@@ -24,7 +24,7 @@ interface PaymentStatusResponse {
 }
 
 export async function createPixPayment(
-    amount: number = 10.00,
+    amount: number = 79.90,
     customerName?: string,
     customerEmail?: string
 ): Promise<CreatePaymentResponse> {

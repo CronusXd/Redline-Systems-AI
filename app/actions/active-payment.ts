@@ -21,8 +21,12 @@ interface PaymentCompletionResult {
 /**
  * Verifica se o usuário tem um pagamento ativo (pending) que ainda não expirou
  */
+/**
+ * Verifica se o usuário tem um pagamento ativo (pending) que ainda não expirou
+ */
 export async function getActivePayment(userId: string, phoneNumber: string): Promise<ActivePaymentResult> {
     const supabase = createServerSupabaseClient()
+    const cleanNumber = phoneNumber.replace(/\D/g, '')
 
     try {
         // Buscar pagamento pendente mais recente
@@ -30,7 +34,7 @@ export async function getActivePayment(userId: string, phoneNumber: string): Pro
             .from('payment_attempts')
             .select('*')
             .eq('user_id', userId)
-            .eq('phone_number', phoneNumber)
+            .eq('phone_number', cleanNumber)
             .eq('status', 'pending')
             .order('created_at', { ascending: false })
             .limit(1)
@@ -94,6 +98,7 @@ export async function saveQRCode(
     amount: number
 ) {
     const supabase = createServerSupabaseClient()
+    const cleanNumber = phoneNumber.replace(/\D/g, '')
 
     try {
         const { error } = await supabase
@@ -101,7 +106,7 @@ export async function saveQRCode(
             .insert({
                 user_id: userId,
                 payment_id: paymentId,
-                phone_number: phoneNumber,
+                phone_number: cleanNumber,
                 qr_code: qrCode,
                 amount,
                 status: 'pending',

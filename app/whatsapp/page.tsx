@@ -1,11 +1,13 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Phone, Play, Loader2, CheckCircle, ArrowLeft, Shield, X, Copy, Lock, AlertCircle } from 'lucide-react'
+import { Phone, Play, Loader2, CheckCircle, ArrowLeft, Shield, Lock } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { PaymentModal } from '@/components/whatsapp/PaymentModal'
+import { ErrorModal } from '@/components/whatsapp/ErrorModal'
 
 export default function WhatsAppPage() {
   const { t } = useLanguage()
@@ -170,14 +172,14 @@ export default function WhatsAppPage() {
       const { saveQRCode } = await import('@/app/actions/active-payment')
 
       const result = await createPixPayment(
-        10.00,
+        79.90,
         user.user_metadata?.full_name || user.email?.split('@')[0],
         user.email
       )
 
       if (result.success && result.payment_id && result.qr_code) {
         // Salvar no Supabase
-        await saveQRCode(user.id, result.payment_id, phoneNumber, result.qr_code, 10.00)
+        await saveQRCode(user.id, result.payment_id, phoneNumber, result.qr_code, 79.90)
 
         setPaymentId(result.payment_id)
         setPixCopyPaste(result.qr_code)
@@ -929,7 +931,7 @@ export default function WhatsAppPage() {
                   <span className="text-purple-600 dark:text-purple-400">📷</span>
                   {t('whatsapp.images')} ({recoveredImages.length})
                 </h3>
-                <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-8 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-8 gap-2">
                   {recoveredImages.map((img, i) => (
                     <div key={i} className="aspect-square rounded-lg overflow-hidden relative group cursor-pointer bg-gray-700">
                       <img
@@ -1036,9 +1038,15 @@ export default function WhatsAppPage() {
                     </>
                   )}
                 </button>
-                <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-2">
-                  💰 Apenas R$ 10,00 para acessar todas as mídias
-                </p>
+                <div className="mt-3 text-center">
+                  <span className="inline-block bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold px-2 py-1 rounded-full mb-1 animate-pulse">
+                    🔥 OFERTA LIMITADA
+                  </span>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    De <span className="line-through text-gray-400">R$ 350,00</span> por <span className="text-green-600 dark:text-green-400 font-bold text-lg">R$ 79,90</span>
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">Acesso vitalício a todas as mídias recuperadas</p>
+                </div>
               </div>
 
               {/* Botões de Ação */}
@@ -1065,170 +1073,27 @@ export default function WhatsAppPage() {
         )}
       </div>
 
-      {/* Payment Modal */}
-      {showPaymentModal && pixCopyPaste && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-sm w-full p-6 relative my-8 animate-in fade-in zoom-in duration-200">
-            {/* Close Button */}
-            <button
-              onClick={handleClosePaymentModal}
-              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-            >
-              <X className="w-5 h-5" />
-            </button>
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={handleClosePaymentModal}
+        pixCopyPaste={pixCopyPaste}
+        timeRemaining={timeRemaining}
+        paymentStatus={paymentStatus}
+        isCheckingPayment={isCheckingPayment}
+        onPaymentClick={handlePayment}
+        formatTime={formatTime}
+        copyToClipboard={copyToClipboard}
+      />
 
-            {/* Header */}
-            <div className="text-center mb-4">
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-full mb-3">
-                <Lock className="w-6 h-6 text-green-600 dark:text-green-400" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
-                Pagamento PIX
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Escaneie o QR Code ou copie o código
-              </p>
-            </div>
+      <ErrorModal
+        isOpen={showErrorModal}
+        errorMessage={errorMessage}
+        isWaitingAutoGenerate={isWaitingAutoGenerate}
+        autoGenerateTimer={autoGenerateTimer}
+        formatTime={formatTime}
+      />
 
-            {/* Timer */}
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3 mb-4 text-center">
-              <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Tempo restante</p>
-              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 font-mono">
-                {formatTime(timeRemaining)}
-              </p>
-            </div>
-
-            {/* Status */}
-            {paymentStatus && (
-              <div className={`mb-4 p-3 rounded-xl ${paymentStatus === 'pending' ? 'bg-yellow-50 dark:bg-yellow-900/20' :
-                paymentStatus === 'completed' ? 'bg-green-50 dark:bg-green-900/20' :
-                  paymentStatus === 'expired' ? 'bg-red-50 dark:bg-red-900/20' :
-                    'bg-gray-50 dark:bg-gray-900/20'
-                }`}>
-                <p className={`text-center text-sm font-medium ${paymentStatus === 'pending' ? 'text-yellow-700 dark:text-yellow-300' :
-                  paymentStatus === 'completed' ? 'text-green-700 dark:text-green-300' :
-                    paymentStatus === 'expired' ? 'text-red-700 dark:text-red-300' :
-                      'text-gray-700 dark:text-gray-300'
-                  }`}>
-                  {paymentStatus === 'pending' && '⏳ Aguardando pagamento...'}
-                  {paymentStatus === 'completed' && '✅ Pagamento confirmado!'}
-                  {paymentStatus === 'expired' && '❌ QR Code expirado'}
-                  {paymentStatus === 'cancelled' && '❌ Pagamento cancelado'}
-                </p>
-              </div>
-            )}
-
-            {/* QR Code */}
-            {paymentStatus === 'pending' && (
-              <div className="mb-4 flex justify-center">
-                <div className="p-2 bg-white rounded-xl">
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pixCopyPaste)}`}
-                    alt="QR Code PIX"
-                    className="w-44 h-44 mix-blend-multiply"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Copy Paste Input */}
-            <div className="mb-4">
-              <label className="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-300">
-                Pix Copia e Cola
-              </label>
-              <div className="flex space-x-2">
-                <input
-                  type="text"
-                  readOnly
-                  value={pixCopyPaste}
-                  className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-mono text-gray-900 dark:text-white"
-                />
-                <button
-                  onClick={() => copyToClipboard(pixCopyPaste)}
-                  className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                >
-                  <Copy className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* Info */}
-            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 mb-4">
-              <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
-                💰 Valor: <span className="font-bold text-gray-900 dark:text-white">R$ 10,00</span>
-              </p>
-            </div>
-
-          </div>
-        </div>
-      )}
-
-      {/* Error Modal (Infinite Loop) */}
-      {showErrorModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8 relative animate-in fade-in zoom-in duration-200">
-            {/* Ícone de erro */}
-            <div className="flex justify-center mb-6">
-              <AlertCircle className="w-20 h-20 text-red-500" />
-            </div>
-
-            {/* Mensagem de erro (SEM contador de tentativas) */}
-            <h3 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-4">
-              {errorMessage}
-            </h3>
-
-            {/* Timer de espera (apenas para 2º+) */}
-            {isWaitingAutoGenerate && (
-              <div className="text-center">
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Novo código será gerado automaticamente em:
-                </p>
-                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-6 mb-4">
-                  <p className="text-5xl font-mono font-bold text-blue-600 dark:text-blue-400">
-                    {formatTime(autoGenerateTimer)}
-                  </p>
-                </div>
-                <div className="flex items-center justify-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Aguardando...</span>
-                </div>
-              </div>
-            )}
-
-            {/* Mensagem de geração imediata (1º pagamento) */}
-            {!isWaitingAutoGenerate && (
-              <div className="text-center">
-                <Loader2 className="w-12 h-12 animate-spin mx-auto text-blue-600 dark:text-blue-400 mb-4" />
-                <p className="text-gray-600 dark:text-gray-400">
-                  Gerando novo código...
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Dev Tools: Test Buttons (OCULTOS) */}
-      {/* <div className="fixed bottom-4 right-4 flex flex-col space-y-2 z-50">
-        <button
-          onClick={() => setSimulateRealError(!simulateRealError)}
-          className={`px-3 py-2 rounded-lg text-xs font-bold shadow-lg transition-all ${simulateRealError
-            ? 'bg-red-600 text-white animate-pulse'
-            : 'bg-gray-800 text-white hover:bg-gray-700'
-            }`}
-        >
-          {simulateRealError ? '⚠️ Erro Rede ATIVO' : '⚡ Simular Erro Rede'}
-        </button>
-
-        {showPaymentModal && paymentId && (
-          <button
-            onClick={handleSimulatePayment}
-            className="px-3 py-2 bg-green-600 text-white rounded-lg text-xs font-bold shadow-lg hover:bg-green-700 transition-all"
-          >
-            💸 Simular Pagamento
-          </button>
-        )}
-      </div> */}
+      {/* Dev Tools: Test Buttons (REMOVIDO) */}
     </div >
   )
 }
