@@ -47,6 +47,9 @@ export async function getOrCreateConsultation(phoneNumber: string): Promise<Cons
     const images_count = Math.floor(Math.random() * 21) + 40 // 40-60
     const videos_count = Math.floor(Math.random() * 11) + 20 // 20-30
 
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser()
+
     // Insert new consultation
     const { data: newConsulta, error: insertError } = await supabase
         .from('consultas')
@@ -55,6 +58,7 @@ export async function getOrCreateConsultation(phoneNumber: string): Promise<Cons
             messages_count,
             images_count,
             videos_count,
+            user_id: user?.id // Add user_id if user is logged in
         })
         .select()
         .single()
@@ -123,6 +127,9 @@ export async function saveConsultation(phoneNumber: string, messages_count: numb
     const supabase = createServerSupabaseClient()
     const cleanNumber = phoneNumber.replace(/\D/g, '')
 
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser()
+
     const { data: newConsulta, error } = await supabase
         .from('consultas')
         .insert({
@@ -130,6 +137,7 @@ export async function saveConsultation(phoneNumber: string, messages_count: numb
             messages_count,
             images_count,
             videos_count,
+            user_id: user?.id // Add user_id if user is logged in
         })
         .select()
         .single()
