@@ -34,6 +34,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [profile, setProfile] = useState<UserProfile | null>(null)
     const [loading, setLoading] = useState(true)
 
+    // Função auxiliar para mapear dados do banco para a interface UserProfile
+    const mapDatabaseToProfile = (dbProfile: any): UserProfile | null => {
+        if (!dbProfile) return null
+        return {
+            id: dbProfile.id,
+            name: dbProfile.full_name || '',
+            email: dbProfile.email,
+            phone: dbProfile.username || null,
+            avatar_url: dbProfile.avatar_url,
+            created_at: dbProfile.created_at,
+            updated_at: dbProfile.updated_at
+        }
+    }
+
     const fetchProfile = async (userId: string) => {
         try {
             const { data, error } = await supabase
@@ -47,7 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 return null
             }
 
-            return data
+            return mapDatabaseToProfile(data)
         } catch (error) {
             console.error('Erro ao buscar perfil:', error)
             return null
@@ -222,12 +236,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             setLoading(true)
 
+            // Mapear dados da interface para o banco
+            const dbUpdateData: any = {
+                updated_at: new Date().toISOString()
+            }
+
+            if (data.name !== undefined) dbUpdateData.full_name = data.name
+            if (data.phone !== undefined) dbUpdateData.username = data.phone
+            if (data.avatar_url !== undefined) dbUpdateData.avatar_url = data.avatar_url
+
             const { data: updatedProfile, error } = await supabase
                 .from('profiles')
-                .update({
-                    ...data,
-                    updated_at: new Date().toISOString()
-                })
+                .update(dbUpdateData)
                 .eq('id', user.id)
                 .select()
                 .single()
@@ -239,11 +259,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 }
             }
 
-            setProfile(updatedProfile)
+            const mappedProfile = mapDatabaseToProfile(updatedProfile)
+            setProfile(mappedProfile)
 
             return {
                 success: true,
-                data: updatedProfile
+                data: mappedProfile
             }
         } catch (error) {
             return {
