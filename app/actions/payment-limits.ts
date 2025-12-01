@@ -1,6 +1,7 @@
 'use server'
 
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { normalizePhoneNumber } from '@/lib/utils/phone'
 
 interface PaymentLimitResult {
     canGenerate: boolean
@@ -26,7 +27,7 @@ interface RetryLimitResult {
  */
 export async function checkPaymentLimit(userId: string, phoneNumber: string): Promise<PaymentLimitResult> {
     const supabase = createServerSupabaseClient()
-    const cleanNumber = phoneNumber.replace(/\D/g, '')
+    const cleanNumber = normalizePhoneNumber(phoneNumber)
 
     // Data de 24 horas atrás
     const yesterday = new Date()
@@ -237,7 +238,7 @@ export async function recordPaymentAttempt(
     isSimulatedError: boolean = false
 ) {
     const supabase = createServerSupabaseClient()
-    const cleanNumber = phoneNumber.replace(/\D/g, '')
+    const cleanNumber = normalizePhoneNumber(phoneNumber)
 
     try {
         const { error } = await supabase

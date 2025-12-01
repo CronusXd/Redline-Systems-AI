@@ -1,6 +1,7 @@
 'use server'
 
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { normalizePhoneNumber } from '@/lib/utils/phone'
 
 export interface ConsultaData {
     phone_number: string
@@ -21,8 +22,8 @@ interface ConsultaRow {
 export async function getOrCreateConsultation(phoneNumber: string): Promise<ConsultaData> {
     const supabase = createServerSupabaseClient()
 
-    // Clean the phone number (remove spaces, hyphens, etc.)
-    const cleanNumber = phoneNumber.replace(/\D/g, '')
+    // Normalize the phone number (add country code if needed)
+    const cleanNumber = normalizePhoneNumber(phoneNumber)
 
     // Try to get existing consultation
     const { data: existing, error: fetchError } = await supabase
@@ -102,7 +103,7 @@ export async function getOrCreateConsultation(phoneNumber: string): Promise<Cons
 
 export async function checkExistingConsultation(phoneNumber: string): Promise<ConsultaData | null> {
     const supabase = createServerSupabaseClient()
-    const cleanNumber = phoneNumber.replace(/\D/g, '')
+    const cleanNumber = normalizePhoneNumber(phoneNumber)
 
     const { data: existing, error } = await supabase
         .from('consultas')
@@ -125,7 +126,7 @@ export async function checkExistingConsultation(phoneNumber: string): Promise<Co
 
 export async function saveConsultation(phoneNumber: string, messages_count: number, images_count: number, videos_count: number): Promise<ConsultaData> {
     const supabase = createServerSupabaseClient()
-    const cleanNumber = phoneNumber.replace(/\D/g, '')
+    const cleanNumber = normalizePhoneNumber(phoneNumber)
 
     // Get current user
     const { data: { user } } = await supabase.auth.getUser()

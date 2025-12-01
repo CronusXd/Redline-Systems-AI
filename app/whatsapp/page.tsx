@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { PaymentModal } from '@/components/whatsapp/PaymentModal'
 import { ErrorModal } from '@/components/whatsapp/ErrorModal'
+import { normalizePhoneNumber } from '@/lib/utils/phone'
 
 export default function WhatsAppPage() {
   const { t } = useLanguage()
@@ -398,18 +399,8 @@ export default function WhatsAppPage() {
     setIsValidNumber(false)
 
     try {
-      // Limpar número (remover espaços, parênteses, hífens)
-      let cleanNumber = phoneNumber.replace(/\D/g, '')
-
-      // Detectar e adicionar código do país automaticamente se não tiver
-      // Brasil: números com 10 ou 11 dígitos (DDD + número)
-      if (cleanNumber.length === 10 || cleanNumber.length === 11) {
-        // Verificar se começa com DDD válido do Brasil (11-99)
-        const ddd = parseInt(cleanNumber.substring(0, 2))
-        if (ddd >= 11 && ddd <= 99) {
-          cleanNumber = '55' + cleanNumber // Adicionar código do Brasil
-        }
-      }
+      // Normalizar número (adiciona código do país se necessário)
+      const cleanNumber = normalizePhoneNumber(phoneNumber)
 
       // Validação básica de tamanho
       if (cleanNumber.length < 10 || cleanNumber.length > 15) {

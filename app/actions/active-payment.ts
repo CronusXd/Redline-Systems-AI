@@ -1,6 +1,7 @@
 'use server'
 
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { normalizePhoneNumber } from '@/lib/utils/phone'
 
 interface ActivePaymentResult {
     hasActivePayment: boolean
@@ -26,7 +27,7 @@ interface PaymentCompletionResult {
  */
 export async function getActivePayment(userId: string, phoneNumber: string): Promise<ActivePaymentResult> {
     const supabase = createServerSupabaseClient()
-    const cleanNumber = phoneNumber.replace(/\D/g, '')
+    const cleanNumber = normalizePhoneNumber(phoneNumber)
 
     try {
         // Buscar pagamento pendente mais recente
@@ -98,7 +99,7 @@ export async function saveQRCode(
     amount: number
 ) {
     const supabase = createServerSupabaseClient()
-    const cleanNumber = phoneNumber.replace(/\D/g, '')
+    const cleanNumber = normalizePhoneNumber(phoneNumber)
 
     try {
         const { error } = await supabase
@@ -130,13 +131,14 @@ export async function getCompletedPaymentCountForPhone(
     phoneNumber: string
 ): Promise<number> {
     const supabase = createServerSupabaseClient()
+    const cleanNumber = normalizePhoneNumber(phoneNumber)
 
     try {
         const { data, error } = await supabase
             .from('payment_attempts')
             .select('*')
             .eq('user_id', userId)
-            .eq('phone_number', phoneNumber)
+            .eq('phone_number', cleanNumber)
             .eq('status', 'completed')
             .eq('is_simulated_error', true)
 
