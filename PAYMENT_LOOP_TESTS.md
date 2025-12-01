@@ -8,7 +8,7 @@
 |-------|------|-------------------|--------|
 | 1 | Usuário clica "Liberar Acesso" | Modal de pagamento abre | ✅ |
 | 2 | QR code gerado | Status: `pending` | ✅ |
-| 3 | Usuário paga (simula) | Status muda para `completed` | ✅ |
+| 3 | Usuário paga  | Status muda para `completed` | ✅ |
 | 4 | Backend verifica | `getCompletedPaymentCountForPhone()` retorna 0 | ✅ |
 | 5 | Backend marca erro | `is_simulated_error: true` | ✅ |
 | 6 | Frontend recebe resposta | `canRetryImmediately: true` | ✅ |

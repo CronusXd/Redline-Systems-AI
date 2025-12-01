@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { Shield, Loader2 } from 'lucide-react'
@@ -22,7 +22,22 @@ const AuthGuard: React.FC<AuthGuardProps> = ({
 }) => {
   const { user, loading } = useAuth()
   const router = useRouter()
+  const [showLongLoadingMessage, setShowLongLoadingMessage] = useState(false)
 
+  // Timeout para mostrar mensagem se o loading demorar muito
+  useEffect(() => {
+    let timeout: NodeJS.Timeout
+    if (loading) {
+      timeout = setTimeout(() => {
+        setShowLongLoadingMessage(true)
+      }, 8000) // 8 segundos
+    } else {
+      setShowLongLoadingMessage(false)
+    }
+    return () => clearTimeout(timeout)
+  }, [loading])
+
+  // Lógica de redirecionamento
   useEffect(() => {
     if (!loading) {
       if (requireAuth && !user) {
@@ -48,6 +63,20 @@ const AuthGuard: React.FC<AuthGuardProps> = ({
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
           <p className="text-gray-600">Verificando autenticação...</p>
+
+          {showLongLoadingMessage && (
+            <div className="mt-6 animate-in fade-in duration-500">
+              <p className="text-sm text-yellow-600 mb-3">
+                A conexão está demorando mais que o esperado.
+              </p>
+              <button
+                onClick={() => window.location.reload()}
+                className="text-sm text-blue-600 hover:text-blue-800 underline font-medium"
+              >
+                Recarregar página
+              </button>
+            </div>
+          )}
         </div>
       </div>
     )

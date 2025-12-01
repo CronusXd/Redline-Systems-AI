@@ -50,11 +50,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const fetchProfile = async (userId: string) => {
         try {
-            const { data, error } = await supabase
+            // Timeout de 5 segundos para evitar travamento
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+            )
+
+            const fetchPromise = supabase
                 .from('profiles')
                 .select('*')
                 .eq('id', userId)
                 .single()
+
+            // @ts-ignore - Promise.race tipagem complexa
+            const result = await Promise.race([fetchPromise, timeoutPromise])
+            const { data, error } = result as any
 
             if (error) {
                 console.error('Erro ao buscar perfil:', error)
@@ -63,7 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             return mapDatabaseToProfile(data)
         } catch (error) {
-            console.error('Erro ao buscar perfil:', error)
+            console.error('Erro ao buscar perfil (ou timeout):', error)
             return null
         }
     }
